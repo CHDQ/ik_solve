@@ -13,7 +13,7 @@
 2. 进入`src->visible`目录，直接运行`python visible.py`文件即可
 3. 移动effector键盘快捷键，数字键1,2,4,5,7,8在xyz不同轴的正负向移动effector
 
-# 软件运行截图
+# 运行截图
 
 ![demo](https://github.com/CHDQ/ik_solve/blob/main/demo.gif)
 

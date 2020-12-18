@@ -1,6 +1,6 @@
 from functools import reduce
 
-from src.ik.ik_chan import *
+from src.ik.ik_chain import *
 
 
 class FABRIK:

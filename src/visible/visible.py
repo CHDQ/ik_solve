@@ -5,7 +5,7 @@ import numpy as np
 import pyvista as pv
 
 from src.ik.fabrik import FABRIK
-from src.ik.ik_chan import *
+from src.ik.ik_chain import *
 
 update_grid = False
 

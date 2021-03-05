@@ -1,8 +1,10 @@
+import math
+
 import torch
 
 from src.ik.ik_chain import IKChain
 from src.ik.ik_sovler import IKSolver
-from src.ik.utils import vector_rot_q, q2matrix, r2q, vector_norm
+from src.ik.utils import vector_rot_q, q2matrix, r2q, vector_norm, matrix2q, q2r
 import numpy as np
 
 
@@ -37,13 +39,16 @@ class JacobianIK(IKSolver):
 
     def add_rot(self, theta_list):
         for i, theta in enumerate(theta_list):
-            self.l_rot_matrix[i] = np.dot(q2matrix(r2q(theta)), self.l_rot_matrix[i])
+            theta = theta[[2, 0, 1]]
+            theta = np.radians(theta)
+            euler = q2r(matrix2q(self.l_rot_matrix[i])) + theta
+            self.l_rot_matrix[i] = q2matrix(r2q(euler))
 
     def jacobian_ik(self, target):
         head, tail, _ = self.calc_bone_pos()
         vector = tail - head
         velocity = self.l_rot_matrix[:, :3, :3]
-        j_t = np.cross(vector, velocity).reshape(-1, 3)
+        j_t = np.cross(velocity, vector).reshape(-1, 3)
         theta = np.dot(j_t, target - tail[-1]) * self.step
         return theta.reshape(-1, 3)
 
@@ -59,6 +64,7 @@ class JacobianIK(IKSolver):
         epoch = 0
         head = None
         orientation_list = None
+        self.max_iter = 200
         while loss > self.tolerance and epoch < self.max_iter:
             theta_list = self.jacobian_ik(target)
             self.add_rot(theta_list)

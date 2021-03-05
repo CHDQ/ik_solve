@@ -50,3 +50,7 @@ def rot_point(q, p):
 
 def q2matrix(q):
     return transformations.quaternion_matrix(q)
+
+
+def matrix2q(matrix):
+    return transformations.quaternion_from_matrix(matrix)

@@ -6,12 +6,14 @@ import pyvista as pv
 
 from src.ik.fabrik import FABRIK
 from src.ik.ik_chain import *
+from src.ik.ik_sovler import IKSolver
+from src.ik.jacobian_ik import JacobianIK
 
 update_grid = False
 
 
 class BoneVisible:
-    def __init__(self, ik_solver: FABRIK):
+    def __init__(self, ik_solver: IKSolver):
         self.chain = ik_solver.chain
         self.ik_solver = ik_solver
         self.arrow = []
@@ -47,7 +49,7 @@ class BoneVisible:
             node.transform_matrix = np.eye(4)
         self.plotter.show_grid()
 
-    def move_target(self, axis="x", step=0.05, reverse=False):
+    def move_target(self, axis="x", step=0.1, reverse=False):
         xyz = ["x", "y", "z"]
         step = step * -1 if reverse else step
 
@@ -76,5 +78,6 @@ if __name__ == "__main__":
     ik_chain.append(BoneNode([0, 0, 0], [1, 0, 0], constraint=constraint))
     ik_chain.append(BoneNode([1, 0, 0], [1, 0, 0], constraint=constraint))
     ik_chain.append(BoneNode([2, 0, 0], [1, 0, 0], constraint=constraint))
-    ik = FABRIK(ik_chain)
+    # ik = FABRIK(ik_chain)
+    ik = JacobianIK(ik_chain)
     BoneVisible(ik).visible()

@@ -1,13 +1,12 @@
 from functools import reduce
 
 from src.ik.ik_chain import *
+from src.ik.ik_sovler import IKSolver
 
 
-class FABRIK:
+class FABRIK(IKSolver):
     def __init__(self, chain: IKChain, tolerance: float = 0.01, max_iter: int = 20):
-        self.chain = chain  # ik链
-        self.tolerance = tolerance  # 容忍度  距离接近范围内就认为到达目标
-        self.max_iter = max_iter  # 最大迭代次数
+        super(FABRIK, self).__init__(chain, tolerance, max_iter)
         self.chain_length = reduce(lambda x, y: x + y.node_length, [0, ] + self.chain.node_list)
         self.chain_size = len(self.chain.node_list)
 

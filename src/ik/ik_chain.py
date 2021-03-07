@@ -11,6 +11,13 @@ class Constraint:
         self.x = x
         self.y = y
         self.z = z
+        self.lower_limit = None
+        self.upper_limit = None
+        self.init_limit()
+
+    def init_limit(self):
+        self.lower_limit = np.array([self.x[0], self.y[0], self.z[0]])
+        self.upper_limit = np.array([self.x[1], self.y[1], self.z[1]])
 
 
 class BoneNode:

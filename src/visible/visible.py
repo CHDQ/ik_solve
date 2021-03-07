@@ -73,11 +73,11 @@ class BoneVisible:
 
 if __name__ == "__main__":
     ik_chain = IKChain()
-    constraint = Constraint([math.radians(-100), math.radians(100)], [math.radians(-100), math.radians(100)],
-                            [math.radians(-100), math.radians(100)])
+    constraint = Constraint([math.radians(-10), math.radians(10)], [math.radians(-10), math.radians(10)],
+                            [math.radians(-50), math.radians(50)])
     ik_chain.append(BoneNode([0, 0, 0], [1, 0, 0], constraint=constraint))
     ik_chain.append(BoneNode([1, 0, 0], [1, 0, 0], constraint=constraint))
     ik_chain.append(BoneNode([2, 0, 0], [1, 0, 0], constraint=constraint))
     # ik = FABRIK(ik_chain)
-    ik = JacobianIK(ik_chain)
+    ik = JacobianIK(ik_chain, tolerance=0.06, max_iter=50)
     BoneVisible(ik).visible()

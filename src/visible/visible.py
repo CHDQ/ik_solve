@@ -79,5 +79,5 @@ if __name__ == "__main__":
     ik_chain.append(BoneNode([1, 0, 0], [1, 0, 0], constraint=constraint))
     ik_chain.append(BoneNode([2, 0, 0], [1, 0, 0], constraint=constraint))
     # ik = FABRIK(ik_chain)
-    ik = JacobianIK(ik_chain)
+    ik = JacobianIK(ik_chain, tolerance=0.06)
     BoneVisible(ik).visible()

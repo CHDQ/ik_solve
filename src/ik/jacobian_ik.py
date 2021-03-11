@@ -44,7 +44,7 @@ class JacobianIK(IKSolver):
         cons = self.chain.node_list[i].constraint
         if cons is None:
             return
-        self.rot_euler[i] = np.clip(self.rot_euler[i], a_min=np.gradient(cons.lower_limit), a_max=np.gradient(cons.upper_limit))
+        self.rot_euler[i] = np.clip(self.rot_euler[i], a_min=cons.lower_limit, a_max=cons.upper_limit)
 
     def add_rot(self, theta_list):
         for i, theta in enumerate(theta_list):
@@ -181,17 +181,18 @@ class JacobianIK(IKSolver):
         j = self.calc_jacobian(self.rot_euler, vector)
         j_p = torch.pinverse(j).cpu()
         v = torch.tensor((target - tail[-1])).float()
-        theta = torch.matmul(j_p, v)
-        dp = self.calc_constrain_d(-theta.reshape(-1, 3) * self.step)
-        y = torch.matmul((torch.eye(j.shape[1]) - torch.matmul(j_p, j)), dp)
-        theta = theta + y
-        theta = -theta * self.step
+        theta = torch.matmul(j_p, v) * self.step
+        dp = self.calc_constrain_d(-theta.reshape(-1, 3))
+        y = torch.matmul((torch.eye(j.shape[1]) - torch.matmul(j_p, j)), dp) * self.step
+        theta = -(theta + y)
         return theta.reshape(-1, 3).numpy()
 
     def calc_constrain_d(self, theta, alpha=math.radians(2), k=0.1):
         """
         参考论文
         A Realistic Joint Limit Algorithm for Kinematically Redundant Manipulators
+
+        验证结果  只是让骨骼间运动更自然一些
         :param theta:
         :param alpha:
         :param k:
@@ -208,7 +209,7 @@ class JacobianIK(IKSolver):
             dt_max = 2 * molecular_max / e
             p1 = 1 / 2 - torch.sign(molecular_min).float() / 2
             p2 = 1 / 2 + torch.sign(molecular_max).float() / 2
-            d = torch.cat((d,( p1 * dt_min + p2 * dt_max).float()))
+            d = torch.cat((d, (p1 * dt_min + p2 * dt_max).float()))
         return -d * k
 
     def update_visible(self, head, orientation_list):

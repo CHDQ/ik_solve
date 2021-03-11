@@ -96,7 +96,6 @@ class JacobianIK(IKSolver):
         Weight = torch.eye(4, dtype=torch.float)
         for i, weight in enumerate(Weight[:3]):
             j_t = torch.cat((j_t, torch.autograd.grad(y, theta, grad_outputs=weight, retain_graph=True)[0]), 0)
-        # print(j_t.view((3, -1)))
         return j_t.view((3, -1)).T.numpy()
 
     def b_euler2matrix(self, theta):
@@ -153,7 +152,6 @@ class JacobianIK(IKSolver):
         """
         theta = torch.from_numpy(theta).float()
         theta = theta.to(self.device)
-        theta.requires_grad = True
         fn = partial(self.b_rotate, point)
         j_t = jacobian(fn, theta)
         j_t = j_t.transpose(0, 1)[:3, ...]
@@ -182,8 +180,36 @@ class JacobianIK(IKSolver):
         # pytorch 批量求jacobian
         j = self.calc_jacobian(self.rot_euler, vector)
         j_p = torch.pinverse(j).cpu()
-        theta = torch.matmul(j_p, torch.tensor((target - tail[-1])).float()) * self.step * -1
+        v = torch.tensor((target - tail[-1])).float()
+        theta = torch.matmul(j_p, v)
+        dp = self.calc_constrain_d(-theta.reshape(-1, 3) * self.step)
+        y = torch.matmul((torch.eye(j.shape[1]) - torch.matmul(j_p, j)), dp)
+        theta = theta + y
+        theta = -theta * self.step
         return theta.reshape(-1, 3).numpy()
+
+    def calc_constrain_d(self, theta, alpha=math.radians(2), k=0.1):
+        """
+        参考论文
+        A Realistic Joint Limit Algorithm for Kinematically Redundant Manipulators
+        :param theta:
+        :param alpha:
+        :param k:
+        :return:
+        """
+        d = torch.tensor([], dtype=torch.float, device=self.device)
+        for i, node in enumerate(self.chain.node_list):
+            constrain = node.constraint
+            euler = torch.tensor(self.rot_euler[i])
+            e = constrain.upper_limit - constrain.lower_limit
+            molecular_min = euler + theta[i] - (constrain.lower_limit + alpha)
+            molecular_max = euler + theta[i] - (constrain.upper_limit - alpha)
+            dt_min = 2 * molecular_min / e
+            dt_max = 2 * molecular_max / e
+            p1 = 1 / 2 - torch.sign(molecular_min).float() / 2
+            p2 = 1 / 2 + torch.sign(molecular_max).float() / 2
+            d = torch.cat((d,( p1 * dt_min + p2 * dt_max).float()))
+        return -d * k
 
     def update_visible(self, head, orientation_list):
         for i, node in enumerate(self.chain.node_list):
@@ -197,6 +223,7 @@ class JacobianIK(IKSolver):
         epoch = 0
         head = None
         orientation_list = None
+        self.max_iter = 100
         while loss > self.tolerance and epoch < self.max_iter:
             theta_list = self.jacobian_ik(target)
             self.add_rot(theta_list)

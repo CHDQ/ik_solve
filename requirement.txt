@@ -1,4 +1,4 @@
 numpy
 pyvista==0.27.4
 transformations==2020.1.1
-torch
+pytorch

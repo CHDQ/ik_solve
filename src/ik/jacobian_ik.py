@@ -140,7 +140,7 @@ class JacobianIK(IKSolver):
         matrix = self.b_euler2matrix(theta)
         p = torch.ones(len(point), 4, dtype=torch.float, device=self.device)
         p[:, :3] = torch.from_numpy(point).to(self.device)
-        y = torch.matmul(matrix, p.unsqueeze(2)).squeeze()
+        y = torch.matmul(matrix, p.unsqueeze(2)).squeeze(-1)
         return y
 
     def calc_jacobian(self, theta, point):
@@ -155,7 +155,7 @@ class JacobianIK(IKSolver):
         fn = partial(self.b_rotate, point)
         j_t = jacobian(fn, theta)
         j_t = j_t.transpose(0, 1)[:3, ...]
-        b = torch.ones(j_t.shape[:-1], dtype=torch.long) * torch.eye(3)
+        b = torch.ones(j_t.shape[:-1], dtype=torch.long) * torch.eye(n=j_t.shape[-2])
         b = b.unsqueeze(-1)
         b = b.expand(-1, -1, -1, 3)
         j_t = torch.masked_select(j_t, b.bool())

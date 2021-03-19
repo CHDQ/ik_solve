@@ -18,3 +18,6 @@
 
 ![demo](https://github.com/CHDQ/ik_solve/blob/main/demo.gif)
 
+# 待完成
+
+    * jacobian 伪逆可能出现值过大情况，需要归一化

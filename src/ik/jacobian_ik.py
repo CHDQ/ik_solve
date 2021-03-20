@@ -127,7 +127,7 @@ class JacobianIK(IKSolver):
         rz[:, 0, 1] = -1 * s2
         rz[:, 1, 0] = s2
         rz[:, 1, 1] = c2
-        matrix[:, :3, :3] = torch.matmul(ry, torch.matmul(rx, rz))
+        matrix[:, :3, :3] = torch.matmul(rz, torch.matmul(ry, rx))
         return matrix
 
     def b_rotate(self, point, theta):
@@ -141,6 +141,7 @@ class JacobianIK(IKSolver):
         p = torch.ones(len(point), 4, dtype=torch.float, device=self.device)
         p[:, :3] = torch.from_numpy(point).to(self.device)
         y = torch.matmul(matrix, p.unsqueeze(2)).squeeze(-1)
+        print(y)
         return y
 
     def calc_jacobian(self, theta, point):
@@ -154,13 +155,11 @@ class JacobianIK(IKSolver):
         theta = theta.to(self.device)
         fn = partial(self.b_rotate, point)
         j_t = jacobian(fn, theta)
-        j_t = j_t.transpose(0, 1)[:3, ...]
-        b = torch.ones(j_t.shape[:-1], dtype=torch.long) * torch.eye(n=j_t.shape[-2])
-        b = b.unsqueeze(-1)
-        b = b.expand(-1, -1, -1, 3)
-        j_t = torch.masked_select(j_t, b.bool())
-        j = j_t.reshape(len(theta), 3, 3).T
-        j = j.reshape(3, 3 * len(theta))
+        # todo 优化
+        j = torch.tensor([])
+        for i in range(j_t.shape[0]):
+            j = torch.cat((j, j_t[i, :3, i, :].unsqueeze(0)), dim=0)
+        j = j.transpose(1, 2).transpose(0, 1).flatten(1)
         return j
 
     def jacobian_ik(self, target):
@@ -178,7 +177,13 @@ class JacobianIK(IKSolver):
         # vector = vector.squeeze(1)
         #############################################################
         # pytorch 批量求jacobian
+        # vector = np.array([[0.3037, -0.3738, 0.0549],
+        #                    [0.0930, -0.2184, 0.0791]])
+        # self.rot_euler = np.array([[-0.6328, -0.0302, 0.0922],
+        #                            [-1.0996, 0.2025, -0.3285]])
         j = self.calc_jacobian(self.rot_euler, vector)
+        # print(j)
+        # return
         j_p = torch.pinverse(j).cpu()
         v = torch.tensor((target - tail[-1])).float()
         theta = torch.matmul(j_p, v) * self.step

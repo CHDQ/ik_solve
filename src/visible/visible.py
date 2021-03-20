@@ -73,8 +73,8 @@ class BoneVisible:
 
 if __name__ == "__main__":
     ik_chain = IKChain()
-    constraint = Constraint([math.radians(-10), math.radians(10)], [math.radians(-10), math.radians(10)],
-                            [math.radians(-50), math.radians(50)])
+    constraint = Constraint([math.radians(-180), math.radians(180)], [math.radians(-180), math.radians(180)],
+                            [math.radians(-180), math.radians(180)])
     ik_chain.append(BoneNode([0, 0, 0], [1, 0, 0], constraint=constraint))
     ik_chain.append(BoneNode([1, 0, 0], [1, 0, 0], constraint=constraint))
     ik_chain.append(BoneNode([2, 0, 0], [1, 0, 0], constraint=constraint))

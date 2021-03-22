@@ -49,7 +49,7 @@ class BoneVisible:
             node.transform_matrix = np.eye(4)
         self.plotter.show_grid()
 
-    def move_target(self, axis="x", step=0.1, reverse=False):
+    def move_target(self, axis="x", step=1, reverse=False):
         xyz = ["x", "y", "z"]
         step = step * -1 if reverse else step
 
@@ -79,5 +79,5 @@ if __name__ == "__main__":
     ik_chain.append(BoneNode([1, 0, 0], [1, 0, 0], constraint=constraint))
     ik_chain.append(BoneNode([2, 0, 0], [1, 0, 0], constraint=constraint))
     # ik = FABRIK(ik_chain)
-    ik = JacobianIK(ik_chain, tolerance=0.06, max_iter=50)
+    ik = JacobianIK(ik_chain, tolerance=0.01, max_iter=200)
     BoneVisible(ik).visible()

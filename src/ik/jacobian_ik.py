@@ -11,14 +11,14 @@ import numpy as np
 
 
 class JacobianIK(IKSolver):
-    def __init__(self, chain: IKChain, tolerance: float = 0.01, max_iter: int = 20):
+    def __init__(self, chain: IKChain, tolerance: float = 0.01, max_iter: int = 200):
         super(JacobianIK, self).__init__(chain, tolerance, max_iter)
         self.rot_matrix = None
         self.rot_euler = None
         # self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.device = torch.device("cpu")
         self.init_joint_tensor()
-        self.step = 0.05
+        self.step = 0.005
 
     def init_joint_tensor(self):
         rot_matrix = []
@@ -141,7 +141,6 @@ class JacobianIK(IKSolver):
         p = torch.ones(len(point), 4, dtype=torch.float, device=self.device)
         p[:, :3] = torch.from_numpy(point).to(self.device)
         y = torch.matmul(matrix, p.unsqueeze(2)).squeeze(-1)
-        print(y)
         return y
 
     def calc_jacobian(self, theta, point):
@@ -177,19 +176,15 @@ class JacobianIK(IKSolver):
         # vector = vector.squeeze(1)
         #############################################################
         # pytorch 批量求jacobian
-        # vector = np.array([[0.3037, -0.3738, 0.0549],
-        #                    [0.0930, -0.2184, 0.0791]])
-        # self.rot_euler = np.array([[-0.6328, -0.0302, 0.0922],
-        #                            [-1.0996, 0.2025, -0.3285]])
         j = self.calc_jacobian(self.rot_euler, vector)
-        # print(j)
-        # return
         j_p = torch.pinverse(j).cpu()
         v = torch.tensor((target - tail[-1])).float()
-        theta = torch.matmul(j_p, v) * self.step
+        theta = torch.matmul(j_p, v)
         dp = self.calc_constrain_d(-theta.reshape(-1, 3))
-        y = torch.matmul((torch.eye(j.shape[1]) - torch.matmul(j_p, j)), dp) * self.step
+        y = torch.matmul((torch.eye(j.shape[1]) - torch.matmul(j_p, j)), dp)
         theta = -(theta + y)
+        theta = theta / torch.max(theta) * self.step
+        print(torch.max(theta))
         return theta.reshape(-1, 3).numpy()
 
     def calc_constrain_d(self, theta, alpha=math.radians(2), k=0.1):
@@ -229,14 +224,12 @@ class JacobianIK(IKSolver):
         epoch = 0
         head = None
         orientation_list = None
-        self.max_iter = 100
         while loss > self.tolerance and epoch < self.max_iter:
             theta_list = self.jacobian_ik(target)
             self.add_rot(theta_list)
             head, tail, orientation_list = self.calc_bone_pos()
             loss = np.linalg.norm(tail[-1] - target)
             epoch = epoch + 1
-            print("\r" + "\t" * 10, end="")
-            print("\r loss: %s, epoch: %s" % (loss, epoch), end="")
+            print("\r loss: %s, epoch: %s" % (loss.item(), epoch), end="")
         self.update_visible(head, orientation_list)
         print()

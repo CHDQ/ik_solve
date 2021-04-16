@@ -19,11 +19,11 @@ def vector_rot_q(initial, target):
     return rotate_q
 
 
-def q2r(q, axes="rzxy"):
+def q2r(q, axes="sxyz"):
     return transformations.euler_from_quaternion(q, axes)
 
 
-def r2q(rad, axes="rzxy"):
+def r2q(rad, axes="sxyz"):
     return transformations.quaternion_from_euler(*rad, axes)
 
 

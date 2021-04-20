@@ -58,3 +58,7 @@ def matrix2q(matrix):
 
 def r2matrix(euler, axis="sxyz"):
     return transformations.euler_matrix(*euler, axis)
+
+
+def matrix2r(matrix, axis="sxyz"):
+    return transformations.euler_from_matrix(matrix, axis)

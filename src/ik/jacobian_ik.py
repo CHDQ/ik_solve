@@ -45,11 +45,11 @@ class JacobianIK(IKSolver):
         theta = np.matmul(jac_pinv, target - joints[0]["tail"])
         return theta.reshape((-1, 3))
 
-    def update_ik(self, theta):
+    def update_ik(self, angle):
         joints = self.orientation2matrix()
         tail = None
         for i, joint in enumerate(reversed(joints)):
-            theta = joint["angle"] + theta[i]
+            theta = joint["angle"] + angle[i]
             matrix = r2matrix(theta)
             vector = vector_norm(np.matmul(matrix[:3, :3], joint["length"] * joint["orientation"]))
             self.chain.node_list[joint["index"]].ik_vector = vector

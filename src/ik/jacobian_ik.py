@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 from tqdm import tqdm
 
@@ -18,8 +20,9 @@ class JacobianIK(IKSolver):
             matrix = q2matrix(q)
             joints.append({
                 "matrix": matrix,
-                "index": self.chain.node_list[len(self.chain.node_list) - i - 1],
+                "index": len(self.chain.node_list) - i - 1,
                 "head": node.ik_position,
+                "orientation": node.init_orientation,
                 "tail": np.matmul(matrix[:3, :3], node.ik_position) + node.ik_position,
                 "length": node.node_length,
                 "angle": matrix2r(matrix)
@@ -29,10 +32,10 @@ class JacobianIK(IKSolver):
     def compute_jacobian(self, joints):
         tail = joints[0]["tail"]
         j = np.zeros((3, 3 * len(self.chain.node_list)), dtype=np.float)
-        for i, matrix in enumerate(joints):
-            diff = tail - self.chain.node_list[joints[i]["index"]]
+        for i, joint in enumerate(joints):
+            diff = tail - joints[i]["tail"]
             for m in range(3):
-                j[:, i * 3 + m] = np.cross(vector_norm(matrix[:, m]).T, diff)
+                j[:, i * 3 + m] = np.cross(vector_norm(joint["matrix"][:3, m]).T, diff)
         return j
 
     def calc_jacobian_ik_task(self, target):
@@ -48,22 +51,24 @@ class JacobianIK(IKSolver):
         for i, joint in enumerate(reversed(joints)):
             theta = joint["angle"] + theta[i]
             matrix = r2matrix(theta)
-            vector = vector_norm(np.matmul(matrix[:3, :3], joint["length"]))
+            vector = vector_norm(np.matmul(matrix[:3, :3], joint["length"] * joint["orientation"]))
             self.chain.node_list[joint["index"]].ik_vector = vector
             if i > 0:
-                self.chain.node_list[joint["index"]].ik_position = self.chain.node_list[joint["index"] - 1].ik_position + vector * joint["length"]
-            tail = self.chain.node_list[joint["index"]].ik_position
+                parent_node = self.chain.node_list[i - 1]
+                self.chain.node_list[i].ik_position = parent_node.ik_position + parent_node.ik_vector * parent_node.node_length
+            tail = self.chain.node_list[i].ik_position
         return tail
 
     def update_ui(self):
-        pass
+        for i in self.chain.node_list:
+            i.update_trans_matrix()
 
     def solve(self, target):
-        with tqdm(range(self.max_iter)) as it:
+        with tqdm(range(self.max_iter), ncols=80) as it:
             for epoch in it:
                 angle = self.calc_jacobian_ik_task(target)
                 tail = self.update_ik(angle)
-                loss = np.linalg.norm(np.abs(target, tail))
+                loss = np.linalg.norm(np.abs(target - tail))
                 it.set_postfix(epoch=epoch, loss=loss)
                 if loss < self.tolerance:
                     break

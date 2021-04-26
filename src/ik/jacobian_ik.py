@@ -43,8 +43,8 @@ class JacobianIK(IKSolver):
     def calc_jacobian_ik_task(self, target):
         joints = self.orientation2matrix()
         jac = self.compute_jacobian(joints)
-        # jac_pinv = np.linalg.pinv(jac)
-        jac_pinv = jac.T
+        jac_pinv = np.linalg.pinv(jac)
+        # jac_pinv = jac.T
         theta = np.matmul(jac_pinv, vector_norm(target - joints[0]["tail"]) * self.step)
         return theta.reshape((-1, 3))
 
@@ -69,13 +69,12 @@ class JacobianIK(IKSolver):
             i.update_trans_matrix()
 
     def solve(self, target):
-        # with tqdm(range(self.max_iter), ncols=80) as it:
-        # for epoch in it:
-        for epoch in range(self.max_iter):
-            angle = self.calc_jacobian_ik_task(target)
-            tail = self.update_ik(angle)
-            loss = np.linalg.norm(np.abs(target - tail))
-            # it.set_postfix(epoch=epoch, loss=loss)
-            if loss < self.tolerance:
-                break
+        with tqdm(range(self.max_iter), ncols=80) as it:
+            for epoch in it:
+                angle = self.calc_jacobian_ik_task(target)
+                tail = self.update_ik(angle)
+                loss = np.linalg.norm(np.abs(target - tail))
+                it.set_postfix(epoch=epoch, loss=loss)
+                if loss < self.tolerance:
+                    break
         self.update_ui()

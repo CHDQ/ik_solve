@@ -30,6 +30,7 @@ class BoneNode:
         self.transform_matrix = np.eye(4)
         self.ik_position = self.position
         self.ik_vector = self.orientation
+        self.ik_joint = [0, 0, 0]
 
     def update_trans_matrix(self):
         """

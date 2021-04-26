@@ -35,9 +35,11 @@ class JacobianIK(IKSolver):
         for i, joint in enumerate(joints):
             current_pos = joint["head"]
             matrix = joint["matrix"]
-            diff = (joint_pos - current_pos)
-            for m in range(3):
-                j[:, i * 3 + m] = np.cross(vector_norm(matrix[:3, m]), diff)
+            diff = joint_pos - current_pos
+            # for m in range(3):
+            #     j[:, i * 3 + m] = np.cross(vector_norm(joint["matrix"][:3, m]).T, diff)
+            diff = np.tile(np.array(diff), (3, 1))
+            j[:3, i * 3:(i + 1) * 3] = np.cross(matrix[:3, :3].T / np.linalg.norm(matrix[:3, :3].T, axis=1), diff).T
         return j
 
     def calc_jacobian_ik_task(self, target):
